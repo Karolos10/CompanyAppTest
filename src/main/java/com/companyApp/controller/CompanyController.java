@@ -1,8 +1,9 @@
 package com.companyApp.controller;
 
 import com.companyApp.model.Company;
-import com.companyApp.repository.CompanyRespository;
+import com.companyApp.service.CompanyService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -13,52 +14,44 @@ import java.util.Map;
 @RequestMapping("/api/company")
 public class CompanyController {
 
-    @Autowired
-    private CompanyRespository companyRespository;
+    private final CompanyService companyService;
+
+    public CompanyController(CompanyService companyService) {
+        this.companyService = companyService;
+    }
 
     @GetMapping("/all")
     public List<Company> getAllCompanies() {
-        return companyRespository.findAll();
+        return companyService.getAllCompanies();
     }
 
-    @GetMapping("/{code}")
-    public Company getCompanyByCode(@PathVariable Long code) {
-        return companyRespository.findById(code).orElse(null);
+    @GetMapping("/{id}")
+    public ResponseEntity<Company> getCompanyById(@PathVariable Long id) {
+        return companyService.getCompanyById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
-    
+
     @PostMapping("/add")
     public Company addCompany(@RequestBody Company company) {
-        return companyRespository.save(company);
+        return companyService.createCompany(company);
     }
 
-    @PutMapping("/update/{code}")
-    public Company updateCompany(@PathVariable Long code, @RequestBody Company company) {
-        Company existingCompany = companyRespository.findById(code).orElse(null);
-        if (existingCompany != null) {
-            existingCompany.setNameCompany(company.getNameCompany());
-            existingCompany.setCodeCompany(company.getCodeCompany());
-            existingCompany.setDescripcionCompany(company.getDescripcionCompany());
-            return companyRespository.save(existingCompany);
-        }
-        return null;
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Company> updateCompany(@PathVariable Long id, @RequestBody Company company) {
+        return companyService.updateCompany(id, company)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping("/delete/{code}")
-    public void deleteCompany(@PathVariable Long code) {
-        companyRespository.deleteById(code);
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Void> deleteCompany(@PathVariable Long id) {
+        companyService.deleteCompany(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/details/{codeCompany}")
-    public Map<String, Object> getCompanyDetails(@PathVariable String codeCompany) {
-        Company company = companyRespository.findByCodeCompany(codeCompany);
-        Map<String, Object> response = new HashMap<>();
-        if (company != null) {
-            return Map.of(
-                    "name", company.getNameCompany(),
-                    "code", company.getCodeCompany(),
-                    "description", company.getDescripcionCompany()
-            );
-        }
-        return Map.of("error", "Company not found");
+    public ResponseEntity<Map<String, String>> getCompanyDetails(@PathVariable String codeCompany) {
+        return ResponseEntity.ok(companyService.getCompanyDetails(codeCompany));
     }
 }
